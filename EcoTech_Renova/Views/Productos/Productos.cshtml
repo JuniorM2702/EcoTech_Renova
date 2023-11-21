@@ -1,0 +1,21 @@
+﻿@model IEnumerable<EcoTech_Renova.Models.Producto>
+
+<link rel="stylesheet" href="~/css/productos.css" />
+
+<div class="product-list">
+    @foreach (var producto in Model)
+    {
+        <div class="product-item">
+            <img src="@Url.Content("~/ruta/de/imagen/" + producto.IDProducto + ".jpg")" alt="Imagen de @producto.Nombre" />
+            <h3>@Html.DisplayFor(modelItem => producto.Nombre)</h3>
+            <p>@Html.DisplayFor(modelItem => producto.Descripcion)</p>
+            <p>Precio: $@Html.DisplayFor(modelItem => producto.Precio)</p>
+            <p>Stock: @Html.DisplayFor(modelItem => producto.Stock)</p>
+
+            <div class="actions">
+                <a href="@Url.Action("Details", new { id = producto.IDProducto })">Detalles</a>
+                <a href="@Url.Action("Edit", new { id = producto.IDProducto })">Editar</a>
+            </div>
+        </div>
+    }
+</div>

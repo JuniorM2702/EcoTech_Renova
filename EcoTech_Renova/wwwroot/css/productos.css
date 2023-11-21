@@ -1,0 +1,67 @@
+/* Reset de estilos y estilos generales */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+
+.container {
+    width: 80%;
+    margin: 0 auto;
+}
+
+/* Estilo de la barra de navegación */
+.navbar {
+    background-color: #333;
+    color: #fff;
+    padding: 10px 0;
+}
+
+    .navbar a {
+        color: #fff;
+        margin: 0 15px;
+        text-decoration: none;
+    }
+
+/* Estilo de la lista de productos */
+.product-list {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.product-item {
+    width: 300px;
+    margin: 20px;
+    padding: 15px;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+    .product-item img {
+        width: 100%;
+        height: auto;
+    }
+
+    .product-item h3 {
+        margin-top: 10px;
+        font-size: 1.2em;
+    }
+
+    .product-item p {
+        margin: 5px 0;
+    }
+
+    .product-item .actions a {
+        display: inline-block;
+        margin-top: 10px;
+        padding: 8px 15px;
+        background-color: #333;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 5px;
+    }
+
+        .product-item .actions a:hover {
+            background-color: #555;
+        }
