@@ -18,7 +18,7 @@ namespace EcoTech_Renova.Controllers
         IEnumerable<Producto> getProductos()
         {
             List<Producto> temporal = new List<Producto>();
-            using (SqlConnection cn = new SqlConnection(_config["ConnectionStrings:EcoTechDBContextConnection"]))
+            using (SqlConnection cn = new SqlConnection(_config["ConnectionStrings:sql"]))
             {
                 cn.Open();
                 SqlCommand cmd = new SqlCommand("SP_LISTAR_PRODUCTOS", cn);

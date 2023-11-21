@@ -26,6 +26,5 @@ namespace EcoTech_Renova.Models
         public int IDRol { get; set; }
 
         // Propiedad de navegación para el rol
-        public ICollection<IdentityUserRole<string>> Roles { get; } = new List<IdentityUserRole<string>>();
     }
 }

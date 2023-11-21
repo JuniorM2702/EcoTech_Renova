@@ -1,17 +1,9 @@
-using EcoTech_Renova.Data;
 using EcoTech_Renova.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
-
-
-builder.Services.AddDbContext<EcoTechDBContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("EcoTechDBContextConnection")));
-
-builder.Services.AddDefaultIdentity<Usuario>(options => options.SignIn.RequireConfirmedAccount = true)
-    .AddEntityFrameworkStores<EcoTechDBContext>();
-
 
 builder.Services.AddSession(option =>
 {
@@ -30,15 +22,14 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
 app.UseRouting();
 
-app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Account}/{action=Login}/{id}");
-
-app.MapRazorPages();
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
+
