@@ -27,6 +27,27 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
                         </li>
                     </ul>
+                    <span class="navbar-text">
+                        @if (Context.Session.GetString("UsuarioCorreo") != null)
+                        {
+                            <!-- Menú para usuarios autenticados -->
+                            <div class="dropdown">
+                                <a class="btn dropdown-toggle" href="#" role="button" id="usuarioDropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    @Context.Session.GetString("UsuarioNombre")
+                                </a>
+                                <div class="dropdown-menu" aria-labelledby="usuarioDropdown">
+                                    <a class="dropdown-item" href="#">Detalles de mi cuenta</a>
+                                    <a class="dropdown-item" asp-action="Logout" asp-controller="Usuarios">Salir</a>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <!-- Menú para usuarios no autenticados -->
+                            <a asp-action="Register" asp-controller="Usuarios">Registrar</a>
+                            <a asp-action="Login" asp-controller="Usuarios">Entrar</a>
+                        }
+                    </span>
                 </div>
             </div>
         </nav>

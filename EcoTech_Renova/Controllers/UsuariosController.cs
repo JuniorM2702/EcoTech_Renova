@@ -1,41 +1,21 @@
 ﻿using EcoTech_Renova.Models;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
+using System;
+using System.Data;
+using System.Data.SqlClient;
 using System.Threading.Tasks;
 
 namespace EcoTech_Renova.Controllers
 {
     public class UsuariosController : Controller
     {
-        private readonly UserManager<Usuario> _userManager;
-        private readonly SignInManager<Usuario> _signInManager;
+        private readonly string _connectionString;
 
-        public UsuariosController(UserManager<Usuario> userManager, SignInManager<Usuario> signInManager)
+        public UsuariosController(IConfiguration configuration)
         {
-            _userManager = userManager;
-            _signInManager = signInManager;
-        }
-
-        public IActionResult Login()
-        {
-            return View();
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Login(string IDUsuario, string Contrasena)
-        {
-            var user = await _userManager.FindByNameAsync(IDUsuario);
-
-            if (user != null && await _userManager.CheckPasswordAsync(user, Contrasena))
-            {
-                await _signInManager.SignInAsync(user, isPersistent: false);
-                return RedirectToAction("Index", "Home");
-            }
-            else
-            {
-                // Si el inicio de sesión falla, manejarlo adecuadamente aquí
-                return View();
-            }
+            _connectionString = configuration.GetConnectionString("sql");
         }
 
         [HttpGet]
@@ -45,43 +25,116 @@ namespace EcoTech_Renova.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Register(Usuario model)
+        public IActionResult Register(Usuario usuario)
         {
-            if (ModelState.IsValid)
+            try
             {
-                var user = new Usuario
+                // Verificar si el correo electrónico ya está registrado
+                if (CorreoElectronicoExistente(usuario.CorreoElectronico))
                 {
-                    Nombre = model.Nombre,
-                    CorreoElectronico = model.CorreoElectronico,
-                    Contrasena = model.Contrasena,
-
-                };
-
-                var result = await _userManager.CreateAsync(user, model.Contrasena);
-
-                if (result.Succeeded)
-                {
-                    await _signInManager.SignInAsync(user, isPersistent: false);
-                    return RedirectToAction("Index", "Home");
+                    ModelState.AddModelError("CorreoElectronico", "Este correo electrónico ya está registrado.");
+                    return View(usuario);
                 }
 
-                foreach (var error in result.Errors)
+                using (SqlConnection connection = new SqlConnection(_connectionString))
                 {
-                    ModelState.AddModelError(string.Empty, error.Description);
+                    connection.Open();
+
+                    using (SqlCommand command = new SqlCommand("SP_REGISTRAR_USUARIO", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+
+                        command.Parameters.AddWithValue("@Nombre", usuario.Nombre);
+                        command.Parameters.AddWithValue("@CorreoElectronico", usuario.CorreoElectronico);
+                        command.Parameters.AddWithValue("@Contrasena", usuario.Contrasena);
+
+                        command.ExecuteNonQuery();
+
+                        TempData["Mensaje"] = "Usuario registrado correctamente.";
+                        return RedirectToAction("Index", "Home");
+                    }
                 }
             }
-
-            return View(model);
+            catch (Exception ex)
+            {
+                // Manejar errores y agregar mensajes de error al modelo
+                ModelState.AddModelError(string.Empty, "Error al registrar usuario. Por favor, inténtelo nuevamente.");
+                return View(usuario);
+            }
         }
 
+        private bool CorreoElectronicoExistente(string correoElectronico)
+        {
+            using (SqlConnection connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                using (SqlCommand command = new SqlCommand("SELECT COUNT(*) FROM Usuarios WHERE CorreoElectronico = @CorreoElectronico", connection))
+                {
+                    command.Parameters.AddWithValue("@CorreoElectronico", correoElectronico);
+
+                    int userCount = (int)command.ExecuteScalar();
+                    return userCount > 0;
+                }
+            }
+        }
+
+        [HttpGet]
+        public IActionResult Login()
+        {
+            return View();
+        }
 
         [HttpPost]
-        public async Task<IActionResult> Logout()
+        public IActionResult Login(Usuario usuario)
         {
-            await _signInManager.SignOutAsync();
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    using (SqlCommand command = new SqlCommand("SELECT * FROM Usuarios WHERE CorreoElectronico = @CorreoElectronico AND Contrasena = @Contrasena", connection))
+                    {
+                        command.Parameters.AddWithValue("@CorreoElectronico", usuario.CorreoElectronico);
+                        command.Parameters.AddWithValue("@Contrasena", usuario.Contrasena);
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                // Usuario válido, realizar las acciones de inicio de sesión
+                                HttpContext.Session.SetString("UsuarioCorreo", usuario.CorreoElectronico);
+                                HttpContext.Session.SetString("UsuarioNombre", reader["Nombre"].ToString());
+
+                                return RedirectToAction("Index", "Home");
+                            }
+                            else
+                            {
+                                ModelState.AddModelError(string.Empty, "Credenciales inválidas. Por favor, inténtelo nuevamente.");
+                                return View(usuario);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Manejar errores y agregar mensajes de error al modelo
+                ModelState.AddModelError(string.Empty, "Error al iniciar sesión. Por favor, inténtelo nuevamente.");
+                return View(usuario);
+            }
+        }
+
+        [HttpGet]
+        public IActionResult Logout()
+        {
+            HttpContext.Session.Clear();
             return RedirectToAction("Index", "Home");
         }
 
 
+
     }
+
 }

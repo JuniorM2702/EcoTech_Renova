@@ -7,9 +7,8 @@
         public string? Descripcion { get; set; }
         public decimal Precio { get; set; }
         public int Stock { get; set; }
-        public decimal Monto { get { return Precio * Stock; } }// Propiedad calculada para el monto
+        public decimal Monto { get { return Precio * Stock; } }
 
-        // Podrías agregar más propiedades si fuera necesario
     }
 
 }

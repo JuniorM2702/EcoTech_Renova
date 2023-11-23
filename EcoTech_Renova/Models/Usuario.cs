@@ -1,19 +1,15 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Identity;
 
 namespace EcoTech_Renova.Models
 {
-    public class Usuario : IdentityUser
+    public class Usuario 
     {
-        [Key]
-        [Display(Name = "ID de Usuario")]
+        [Display(Name = "ID del Usuario")]
         public string IDUsuario { get; set; }
 
-        [Required(ErrorMessage = "El nombre es obligatorio")]
+        [Display(Name = "Nombre de Usuario/Entidad")]
         public string Nombre { get; set; }
 
-        [Required(ErrorMessage = "El correo electrónico es obligatorio")]
-        [EmailAddress(ErrorMessage = "Dirección de correo electrónico no válida")]
         [Display(Name = "Correo Electrónico")]
         public string CorreoElectronico { get; set; }
 
@@ -23,8 +19,7 @@ namespace EcoTech_Renova.Models
         [Required(ErrorMessage = "La contraseña es obligatoria")]
         public string Contrasena { get; set; }
 
-        public int IDRol { get; set; }
+        public Rol Rol {  get; set; }
 
-        // Propiedad de navegación para el rol
     }
 }
