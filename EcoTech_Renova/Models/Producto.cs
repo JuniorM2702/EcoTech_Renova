@@ -5,7 +5,6 @@ using System.Text.RegularExpressions;
 
 public class Producto
 {
-    [Key]
     [Display(Name = "ID de Producto")]
     public string IDProducto { get; set; }
 
@@ -17,20 +16,22 @@ public class Producto
 
     [Required(ErrorMessage = "El precio es obligatorio")]
     [DisplayFormat(DataFormatString = "{0:C}", ApplyFormatInEditMode = true)]
+    [Display(Name = "Precio", Prompt = "Ingrese el precio")]
     public decimal Precio { get; set; }
 
     [Required(ErrorMessage = "El stock es obligatorio")]
     public int Stock { get; set; }
 
     [Display(Name = "Categoría")]
-    public string IDCategoria { get; set; }
+    public int IDCategoria { get; set; }
 
     [Display(Name = "Vendedor")]
     public string IDUsuario { get; set; }
 
+    [Display(Name = "Imagen del Producto")]
+    public IFormFile Imagen { get; set; }
+    public string RutaImagen { get; set; } 
+
     public bool YaRegistrado { get; set; }
 
-    // Esta propiedad representa la relación con la categoría
-    public Categoria Categoria { get; set; }
-    public Usuario Usuario { get; set;}
 }

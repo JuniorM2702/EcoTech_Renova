@@ -3,9 +3,8 @@ using System.ComponentModel.DataAnnotations;
 
 public class Categoria
 {
-    [Key]
     [Display(Name = "ID de Categoría")]
-    public string IDCategoria { get; set; }
+    public int IDCategoria { get; set; }
 
     [Required(ErrorMessage = "El nombre de categoría es obligatorio")]
     [Display(Name = "Nombre de Categoría")]

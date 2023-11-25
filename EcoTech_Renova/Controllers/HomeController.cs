@@ -1,6 +1,7 @@
 ﻿using EcoTech_Renova.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
+using System.Net.Http;
 
 namespace EcoTech_Renova.Controllers
 {
@@ -28,5 +29,7 @@ namespace EcoTech_Renova.Controllers
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
+
+       
     }
 }

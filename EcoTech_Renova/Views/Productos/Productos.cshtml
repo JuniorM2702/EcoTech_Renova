@@ -6,16 +6,19 @@
     @foreach (var producto in Model)
     {
         <div class="product-item">
-            <img src="@Url.Content("~/ruta/de/imagen/" + producto.IDProducto + ".jpg")" alt="Imagen de @producto.Nombre" />
-            <h3>@Html.DisplayFor(modelItem => producto.Nombre)</h3>
-            <p>@Html.DisplayFor(modelItem => producto.Descripcion)</p>
-            <p>Precio: $@Html.DisplayFor(modelItem => producto.Precio)</p>
+            <img src="@Url.Content(producto.RutaImagen)" alt="Imagen del producto" class="product-image" />
+            <h3>ID: @Html.DisplayFor(modelItem => producto.IDProducto)</h3>
+            <h4>@Html.DisplayFor(modelItem => producto.Nombre)</h4>
+            <p>Precio: S/.@producto.Precio.ToString("N2")</p>
             <p>Stock: @Html.DisplayFor(modelItem => producto.Stock)</p>
-
-            <div class="actions">
-                <a href="@Url.Action("Details", new { id = producto.IDProducto })">Detalles</a>
-                <a href="@Url.Action("Edit", new { id = producto.IDProducto })">Editar</a>
-            </div>
+            @if (producto.YaRegistrado)
+            {
+                <p class="text-success">YA ESTÁ REGISTRADO</p>
+            }
+            else
+            {
+                <a asp-action="Detalle" asp-route-id="@producto.IDProducto" class="btn btn-primary">Agregar al carrito</a>
+            }
         </div>
     }
 </div>

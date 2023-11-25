@@ -11,11 +11,12 @@ namespace EcoTech_Renova.Controllers
 {
     public class UsuariosController : Controller
     {
-        private readonly string _connectionString;
+        private readonly IConfiguration _config;
 
-        public UsuariosController(IConfiguration configuration)
+
+        public UsuariosController(IConfiguration config)
         {
-            _connectionString = configuration.GetConnectionString("sql");
+            _config = config;
         }
 
         [HttpGet]
@@ -23,24 +24,23 @@ namespace EcoTech_Renova.Controllers
         {
             return View();
         }
-
+        
         [HttpPost]
         public IActionResult Register(Usuario usuario)
         {
             try
             {
-                // Verificar si el correo electrónico ya está registrado
                 if (CorreoElectronicoExistente(usuario.CorreoElectronico))
                 {
                     ModelState.AddModelError("CorreoElectronico", "Este correo electrónico ya está registrado.");
                     return View(usuario);
                 }
 
-                using (SqlConnection connection = new SqlConnection(_connectionString))
+                using (SqlConnection cn = new SqlConnection(_config["ConnectionStrings:sql"]))
                 {
-                    connection.Open();
+                    cn.Open();
 
-                    using (SqlCommand command = new SqlCommand("SP_REGISTRAR_USUARIO", connection))
+                    using (SqlCommand command = new SqlCommand("SP_REGISTRAR_USUARIO", cn))
                     {
                         command.CommandType = CommandType.StoredProcedure;
 
@@ -50,14 +50,13 @@ namespace EcoTech_Renova.Controllers
 
                         command.ExecuteNonQuery();
 
-                        TempData["Mensaje"] = "Usuario registrado correctamente.";
+                        ViewBag.Mensaje = "Usuario registrado correctamente.";
                         return RedirectToAction("Index", "Home");
                     }
                 }
             }
             catch (Exception ex)
             {
-                // Manejar errores y agregar mensajes de error al modelo
                 ModelState.AddModelError(string.Empty, "Error al registrar usuario. Por favor, inténtelo nuevamente.");
                 return View(usuario);
             }
@@ -65,11 +64,11 @@ namespace EcoTech_Renova.Controllers
 
         private bool CorreoElectronicoExistente(string correoElectronico)
         {
-            using (SqlConnection connection = new SqlConnection(_connectionString))
+            using (SqlConnection cn = new SqlConnection(_config["ConnectionStrings:sql"]))
             {
-                connection.Open();
+                cn.Open();
 
-                using (SqlCommand command = new SqlCommand("SELECT COUNT(*) FROM Usuarios WHERE CorreoElectronico = @CorreoElectronico", connection))
+                using (SqlCommand command = new SqlCommand("SELECT COUNT(*) FROM Usuarios WHERE CorreoElectronico = @CorreoElectronico", cn))
                 {
                     command.Parameters.AddWithValue("@CorreoElectronico", correoElectronico);
 
@@ -90,11 +89,11 @@ namespace EcoTech_Renova.Controllers
         {
             try
             {
-                using (SqlConnection connection = new SqlConnection(_connectionString))
+                using (SqlConnection cn = new SqlConnection(_config["ConnectionStrings:sql"]))
                 {
-                    connection.Open();
+                    cn.Open();
 
-                    using (SqlCommand command = new SqlCommand("SELECT * FROM Usuarios WHERE CorreoElectronico = @CorreoElectronico AND Contrasena = @Contrasena", connection))
+                    using (SqlCommand command = new SqlCommand("SELECT IDUsuario, Nombre FROM Usuarios WHERE CorreoElectronico = @CorreoElectronico AND Contrasena = @Contrasena", cn))
                     {
                         command.Parameters.AddWithValue("@CorreoElectronico", usuario.CorreoElectronico);
                         command.Parameters.AddWithValue("@Contrasena", usuario.Contrasena);
@@ -103,9 +102,12 @@ namespace EcoTech_Renova.Controllers
                         {
                             if (reader.Read())
                             {
-                                // Usuario válido, realizar las acciones de inicio de sesión
+                                string idUsuario = reader["IDUsuario"].ToString();
+                                string nombreUsuario = reader["Nombre"].ToString();
+
+                                HttpContext.Session.SetString("IDUsuario", idUsuario);
                                 HttpContext.Session.SetString("UsuarioCorreo", usuario.CorreoElectronico);
-                                HttpContext.Session.SetString("UsuarioNombre", reader["Nombre"].ToString());
+                                HttpContext.Session.SetString("UsuarioNombre", nombreUsuario);
 
                                 return RedirectToAction("Index", "Home");
                             }
@@ -120,11 +122,11 @@ namespace EcoTech_Renova.Controllers
             }
             catch (Exception ex)
             {
-                // Manejar errores y agregar mensajes de error al modelo
                 ModelState.AddModelError(string.Empty, "Error al iniciar sesión. Por favor, inténtelo nuevamente.");
                 return View(usuario);
             }
         }
+
 
         [HttpGet]
         public IActionResult Logout()
@@ -133,8 +135,9 @@ namespace EcoTech_Renova.Controllers
             return RedirectToAction("Index", "Home");
         }
 
-
+      
 
     }
 
 }
+
