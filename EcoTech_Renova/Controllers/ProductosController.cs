@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.SqlClient;
-using Microsoft.Win32;
 using Newtonsoft.Json;
 using System.Data;
 
@@ -11,10 +10,13 @@ namespace EcoTech_Renova.Controllers
     public class ProductosController : Controller
     {
         private readonly IConfiguration _config;
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public ProductosController(IConfiguration config)
+        public ProductosController(IConfiguration config, IWebHostEnvironment webHostEnvironment)
         {
             _config = config;
+            _webHostEnvironment = webHostEnvironment;
+
         }
 
         IEnumerable<Producto> getProductos()
@@ -28,6 +30,10 @@ namespace EcoTech_Renova.Controllers
                 SqlDataReader dr = cmd.ExecuteReader();
                 while (dr.Read())
                 {
+                    string idUsuario = dr["IDUsuario"] as string;
+                    ViewBag.Categorias = ObtenerCategorias();
+                    // string nombreUsuario = ObtenerNombreUsuario(idUsuario);
+
                     temporal.Add(new Producto()
                     {
                         IDProducto = dr["IDProducto"] as string,
@@ -36,15 +42,79 @@ namespace EcoTech_Renova.Controllers
                         Precio = Convert.ToDecimal(dr["Precio"]),
                         Stock = Convert.ToInt32(dr["Stock"]),
                         IDCategoria = Convert.ToInt32(dr["IDCategoria"]),
-                        IDUsuario = dr["IDUsuario"] as string,
+                        IDUsuario = idUsuario,
+                        ImagenProducto = dr["ImagenProducto"] as IFormFile
                     });
                 }
-
                 dr.Close();
             }
             return temporal;
         }
 
+        [HttpPost]
+        public async Task<IActionResult> DetalleProducto(string id)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(id))
+                {
+                    return RedirectToAction("Error");
+                }
+
+                Producto producto = await DetallesProducto(id);
+
+                if (producto == null)
+                {
+                    return RedirectToAction("Error");
+                }
+
+                // Obtener y establecer el nombre del usuario en el ViewBag
+                string nombreUsuario = ObtenerNombreUsuario(producto.IDUsuario);
+                ViewBag.NombreUsuario = nombreUsuario;
+
+                return View("DetalleProducto", producto);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error en el método DetalleProducto: {ex.Message}");
+                return View("Error");
+            }
+        }
+
+        private async Task<Producto> DetallesProducto(string idProducto)
+        {
+            Producto producto = null;
+
+            using (SqlConnection cn = new SqlConnection(_config["ConnectionStrings:sql"]))
+            {
+                await cn.OpenAsync();
+                SqlCommand cmd = new SqlCommand("SP_DETALLE_PRODUCTO", cn);
+                cmd.CommandType = CommandType.StoredProcedure;
+
+                // Agregar parámetros al comando
+                cmd.Parameters.AddWithValue("@IDProducto", idProducto);
+
+                using (SqlDataReader dr = await cmd.ExecuteReaderAsync())
+                {
+                    if (dr.Read())
+                    {
+                        producto = new Producto()
+                        {
+                            IDProducto = dr["IDProducto"] as string,
+                            Nombre = dr["Nombre"] as string,
+                            Descripcion = dr["Descripcion"] as string,
+                            Precio = Convert.ToDecimal(dr["Precio"]),
+                            Stock = Convert.ToInt32(dr["Stock"]),
+                            IDCategoria = Convert.ToInt32(dr["IDCategoria"]),
+                            IDUsuario = dr["IDUsuario"] as string,
+                            ImagenProducto = dr["ImagenProducto"] as IFormFile
+                        };
+                    }
+                }
+            }
+
+            return producto;
+        }
         public async Task<IActionResult> Productos()
         {
             try
@@ -73,8 +143,7 @@ namespace EcoTech_Renova.Controllers
                 // Loguea el error (puedes utilizar ILogger aquí)
                 Console.WriteLine($"Error en el método Productos: {ex.Message}");
 
-                // Puedes redirigir a una vista de error o realizar alguna otra acción apropiada
-                return View("Error"); // Asegúrate de tener una vista llamada "Error" en tu carpeta "Views"
+                return View("Error"); 
             }
         }
 
@@ -100,43 +169,34 @@ namespace EcoTech_Renova.Controllers
         [HttpGet]
         public IActionResult AgregarProducto()
         {
-            // Obtener el ID del vendedor de la sesión actual
             string idVendedor = HttpContext.Session.GetString("IDUsuario");
 
-            // Si el usuario no está autenticado, redirigir a la página de inicio de sesión
             if (string.IsNullOrEmpty(idVendedor) && !User.Identity.IsAuthenticated)
             {
-                return RedirectToAction("Login", "Usuarios"); // Ajusta la acción y el controlador según tu configuración real
+                return RedirectToAction("Login", "Usuarios"); 
             }
 
-            // Resto del código para obtener y pasar las categorías
             var categorias = ObtenerCategorias();
             ViewBag.Categorias = new SelectList(categorias, "IDCategoria", "NombreCategoria");
 
-            // Pasa el ID del vendedor a la vista
             ViewBag.IDVendedor = idVendedor;
 
             return View();
         }
 
         [HttpPost]
-        public async Task<IActionResult> AgregarProducto(Producto nuevoProducto, IFormFile imagen)
+        public async Task<IActionResult> AgregarProducto(Producto nuevoProducto)
         {
             try
             {
-                // Obtener el IDUsuario de la sesión actual
                 string userId = HttpContext.Session.GetString("IDUsuario");
 
-                // Si el usuario no está autenticado, redirigir a la página de inicio de sesión
                 if (string.IsNullOrEmpty(userId) && !User.Identity.IsAuthenticated)
                 {
                     return RedirectToAction("Login", "Usuarios");
                 }
                 
-                // Asigna el ID del usuario al nuevo producto.
                 nuevoProducto.IDUsuario = userId;
-
-                // Resto del código para insertar el nuevo producto en la base de datos
 
                 using (SqlConnection cn = new SqlConnection(_config["ConnectionStrings:sql"]))
                 {
@@ -144,36 +204,34 @@ namespace EcoTech_Renova.Controllers
                     SqlCommand cmd = new SqlCommand("SP_INSERTAR_PRODUCTOS", cn);
                     cmd.CommandType = CommandType.StoredProcedure;
 
-                    // Agregar parámetros al comando
                     cmd.Parameters.AddWithValue("@p_Nombre", nuevoProducto.Nombre);
                     cmd.Parameters.AddWithValue("@p_Descripcion", nuevoProducto.Descripcion);
                     cmd.Parameters.AddWithValue("@p_Precio", nuevoProducto.Precio);
                     cmd.Parameters.AddWithValue("@p_Stock", nuevoProducto.Stock);
-                    cmd.Parameters.AddWithValue("@p_IDCategoria", nuevoProducto.IDCategoria);  // Asegúrate de que esta propiedad se llame correctamente
+                    cmd.Parameters.AddWithValue("@p_IDCategoria", nuevoProducto.IDCategoria);
                     cmd.Parameters.AddWithValue("@p_IDUsuario", nuevoProducto.IDUsuario);
-
-                    // Ejecutar el comando
-                    await cmd.ExecuteNonQueryAsync();
-                }
-                if (imagen != null && imagen.Length > 0)
-                {
-                    var nombreArchivo = Guid.NewGuid().ToString() + Path.GetExtension(imagen.FileName);
-                    var rutaGuardar = Path.Combine("D:\\Workspace\\Ciclo 5\\Desarrollo de Servicios WEB I\\EcoTech_Renova\\EcoTech_Renova\\wwwroot\\img", nombreArchivo);
-
-                    using (var stream = new FileStream(rutaGuardar, FileMode.Create))
+                    if (nuevoProducto.ImagenProducto != null)
                     {
-                        await imagen.CopyToAsync(stream);
+                        using (MemoryStream stream = new MemoryStream())
+                        {
+                            nuevoProducto.ImagenProducto.CopyTo(stream);
+                            byte[] imagenEnBytes = stream.ToArray();
+                            cmd.Parameters.AddWithValue("@p_ImagenProducto", imagenEnBytes);
+                        }
                     }
-                }
-
+                    else
+                    {
+                        cmd.Parameters.AddWithValue("@p_ImagenProducto", DBNull.Value);
+                    }
+                    await cmd.ExecuteNonQueryAsync();
+                }             
                 return RedirectToAction("Productos");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error al registrar el producto: {ex.Message}");
+                Console.WriteLine($"StackTrace: {ex.StackTrace}");
                 ModelState.AddModelError(string.Empty, "Error al registrar el producto. Por favor, inténtelo nuevamente.");
 
-                // Vuelve a pasar las categorías y el ID del vendedor a la vista
                 var categorias = ObtenerCategorias();
                 ViewBag.Categorias = new SelectList(categorias, "IDCategoria", "NombreCategoria");
                 ViewBag.IDVendedor = HttpContext.Session.GetString("IDUsuario");
@@ -182,8 +240,7 @@ namespace EcoTech_Renova.Controllers
             }
         }
 
-
-        private List<Categoria> ObtenerCategorias()
+        public List<Categoria> ObtenerCategorias()
         {
             List<Categoria> categorias = new List<Categoria>();
 
@@ -208,5 +265,149 @@ namespace EcoTech_Renova.Controllers
             return categorias;
         }
 
+        public IActionResult ObtenerImagen(string id)
+        {
+            // Obtener la imagen de la base de datos según el ID del producto
+            byte[] imagenBytes = ObtenerImagenDesdeBaseDeDatos(id);
+
+            if (imagenBytes != null && imagenBytes.Length > 0)
+            {
+                // Convertir los bytes de la imagen a un Stream
+                using (MemoryStream stream = new MemoryStream(imagenBytes))
+                {
+                    // Devolver la imagen como un FileResult
+                    return File(stream.ToArray(), "image/jpg");
+                }
+            }
+
+            return NotFound();
+        }
+
+        private byte[] ObtenerImagenDesdeBaseDeDatos(string id)
+        {
+            byte[] imagenBytes = null;
+
+            using (SqlConnection cn = new SqlConnection(_config["ConnectionStrings:sql"]))
+            {
+                cn.Open();
+                SqlCommand cmd = new SqlCommand("SELECT ImagenProducto FROM Productos WHERE IDProducto = @IDProducto", cn);
+
+                cmd.Parameters.AddWithValue("@IDProducto", id);
+
+                using (SqlDataReader dr = cmd.ExecuteReader())
+                {
+                    if (dr.Read())
+                    {
+                        imagenBytes = dr["ImagenProducto"] as byte[];
+                    }
+                }
+            }
+
+            return imagenBytes;
+        }
+
+        private string ObtenerNombreUsuario(string idUsuario)
+        {
+            using (SqlConnection cn = new SqlConnection(_config["ConnectionStrings:sql"]))
+            {
+                cn.Open();
+                SqlCommand cmd = new SqlCommand("SELECT Nombre FROM Usuarios WHERE IDUsuario = @IDUsuario", cn);
+                cmd.Parameters.AddWithValue("@IDUsuario", idUsuario);
+
+                object resultado = cmd.ExecuteScalar();
+
+                return resultado != null ? resultado.ToString() : string.Empty;
+            }
+        }
+
+        [HttpPost]
+        public IActionResult AgregarAlCarrito(string id)
+        {
+            try
+            {
+                // Obtener el producto correspondiente al ID
+                Producto producto = DetallesProducto(id).Result; // Usamos Result para obtener el resultado sincrónicamente
+
+                if (producto != null)
+                {
+                    // Obtener o inicializar la canasta desde la sesión
+                    List<RegistroProducto> carrito = JsonConvert.DeserializeObject<List<RegistroProducto>>(
+                        HttpContext.Session.GetString("canasta")) ?? new List<RegistroProducto>();
+
+                    // Verificar si el producto ya está en el carrito
+                    if (!carrito.Any(registro => registro.IDProducto == producto.IDProducto))
+                    {
+                        // Agregar el producto al carrito con una cantidad inicial de 1
+                        carrito.Add(new RegistroProducto
+                        {
+                            IDProducto = producto.IDProducto,
+                            Nombre = producto.Nombre,
+                            Precio = producto.Precio,
+                            Cantidad = 1,
+                            IDUsuario = producto.IDUsuario,
+                            Stock = producto.Stock 
+                        });
+
+                        // Actualizar la sesión con la nueva canasta
+                        HttpContext.Session.SetString("canasta", JsonConvert.SerializeObject(carrito));
+
+                        // Devolver una respuesta exitosa
+                        return Json(new { success = true });
+                    }
+
+                    // El producto ya está en el carrito, puedes manejar esto de acuerdo a tus requerimientos
+                    return Json(new { success = false, message = "El producto ya está en el carrito" });
+                }
+
+                // Producto no encontrado, puedes manejar esto de acuerdo a tus requerimientos
+                return Json(new { success = false, message = "Producto no encontrado" });
+            }
+            catch (Exception ex)
+            {
+                // Loguea el error (puedes utilizar ILogger aquí)
+                Console.WriteLine($"Error en el método AgregarAlCarrito: {ex.Message}");
+
+                // Devolver una respuesta de error
+                return Json(new { success = false, message = "Error al agregar el producto al carrito" });
+            }
+        }
+
+        public async Task<IActionResult> FiltrarPorCategoria(int categoriaId)
+        {
+            try
+            {
+                // Obtén la lista de productos según la categoría seleccionada
+                List<Producto> productos = (List<Producto>)await Task.Run(() => getProductos().Where(p => p.IDCategoria == categoriaId).ToList());
+
+                // Obtener el nombre de la categoría
+                string nombreCategoria = ObtenerNombreCategoria(categoriaId);
+                ViewBag.NombreCategoria = nombreCategoria;
+
+                // Resto del código para manejar la sesión y otros detalles si es necesario
+
+                return View("Productos", productos);
+            }
+            catch (Exception ex)
+            {
+                // Loguea el error (puedes utilizar ILogger aquí)
+                Console.WriteLine($"Error en el método FiltrarPorCategoria: {ex.Message}");
+
+                return View("Error");
+            }
+        }
+
+        private string ObtenerNombreCategoria(int categoriaId)
+        {
+            using (SqlConnection cn = new SqlConnection(_config["ConnectionStrings:sql"]))
+            {
+                cn.Open();
+                SqlCommand cmd = new SqlCommand("SELECT NombreCategoria FROM Categorias WHERE IDCategoria = @IDCategoria", cn);
+                cmd.Parameters.AddWithValue("@IDCategoria", categoriaId);
+
+                object resultado = cmd.ExecuteScalar();
+
+                return resultado != null ? resultado.ToString() : string.Empty;
+            }
+        }
     }
 }

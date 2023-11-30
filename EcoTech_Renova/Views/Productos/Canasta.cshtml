@@ -1,0 +1,71 @@
+﻿@model IEnumerable<EcoTech_Renova.Models.RegistroProducto>
+
+<h1>Tu Canasta</h1>
+
+<p>
+    <a asp-action="Productos" class="btn btn-success">Seguir Comprando</a>  
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.IDProducto)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Nombre)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Descripcion)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Precio)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Cantidad)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.IDUsuario)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Monto)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.IDProducto)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Nombre)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Descripcion)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Precio)
+            </td>
+                <td>
+                    <form method="post" asp-action="ActualizarCantidad" asp-controller="Productos">
+                        <input type="hidden" name="idProducto" value="@item.IDProducto" />
+                        <input type="number" name="cantidad" value="@item.Cantidad" min="1" max="@item.Stock" />
+                        <button type="submit" class="btn btn-primary">Actualizar Cantidad</button>
+                    </form>
+                </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.IDUsuario)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Monto)
+            </td>         
+        </tr>
+            <tr>
+                <td colspan="6">Monto Total del Pedido</td>
+                <td>@Model.Sum(x => x.Monto).ToString("#####.#0")</td>
+            </tr>
+            <a asp-action="Comprar" class="btn btn-success">Pagar</a>
+}
+    </tbody>
+</table>

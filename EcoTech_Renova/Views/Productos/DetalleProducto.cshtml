@@ -1,0 +1,90 @@
+﻿@model EcoTech_Renova.Models.Producto
+
+<div>
+    <h4>Detalles del Producto</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.IDProducto)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.IDProducto)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Nombre)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Nombre)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Descripcion)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Descripcion)
+        </dd>
+        <dt class="col-sm-2">
+            Precio
+        </dt>
+        <dd class="col-sm-10">
+            S/. @Model.Precio.ToString("N2")
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Stock)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Stock)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.IDCategoria)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.IDCategoria)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.IDUsuario)
+        </dt>
+        <dd class="col-sm-10">
+            @ViewBag.NombreUsuario
+        </dd>
+    </dl>
+</div>
+<div>
+    @if (Model.YaRegistrado)
+    {
+        <p class="text-success">YA ESTÁ EN EL CARRITO</p>
+    }
+    else
+    {
+        <button id="btnAgregarAlCarrito" data-idproducto="@Model.IDProducto" class="btn btn-primary">Agregar al Carrito</button>
+    }
+
+    @Html.ActionLink("Regresar", "Productos")
+</div>
+
+@section scripts {
+    <script>
+        $(document).ready(function () {
+            $("#btnAgregarAlCarrito").click(function (e) {
+                e.preventDefault();
+
+                var idProducto = $(this).data("idproducto");
+
+                $.ajax({
+                    type: "POST",
+                    url: "/Productos/AgregarAlCarrito/" + idProducto,
+                    success: function (response) {
+                        if (response.success) {
+                            alert("Producto agregado al carrito exitosamente.");
+                            // Puedes realizar más acciones aquí, como actualizar la interfaz de usuario.
+                        } else {
+                            alert("Error: " + response.message);
+                        }
+                    },
+                    error: function () {
+                        alert("Error al realizar la solicitud AJAX.");
+                    }
+                });
+            });
+        });
+    </script>
+}

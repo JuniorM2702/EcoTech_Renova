@@ -4,7 +4,7 @@
 <hr />
 <div class="row">
     <div class="col-md-4">
-        <form asp-action="AgregarProducto">
+        <form asp-action="AgregarProducto" method="post" enctype="multipart/form-data" asp-controller="Productos">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
                 <label asp-for="Nombre" class="control-label"></label>
@@ -34,55 +34,30 @@
                 <span asp-validation-for="IDCategoria" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="RutaImagen" class="control-label"></label>
-                <input asp-for="RutaImagen" type="file" class="form-control" id="input-imagen" onchange="mostrarVistaPrevia()" />
-                <span asp-validation-for="RutaImagen" class="text-danger"></span>
+                <label asp-for="ImagenProducto" class="control-label"></label>
+                <div class="custom-file">
+                    <input asp-for="ImagenProducto" class="custom-file-input" id="customFile" />
+                    <label class="custom-file-label" for="customFile"></label>
+                </div>
+                <span asp-validation-for="ImagenProducto" class="text-danger"></span>
             </div>
-            <div class="form-group">
-                <img id="vista-previa" src="#" alt="Vista previa de la imagen" style="max-width: 200px; max-height: 200px; display: none;" />
-            </div>
-
             <div class="form-group">
                 <label asp-for="IDUsuario" class="control-label"></label>
                 <input asp-for="IDUsuario" class="form-control" value="@ViewBag.IDVendedor" readonly/>
                 <span asp-validation-for="IDUsuario" class="text-danger"></span>
-            </div>            
-            <div class="form-group form-check">
-                <label class="form-check-label">
-                    <input class="form-check-input" asp-for="YaRegistrado" /> @Html.DisplayNameFor(model => model.YaRegistrado)
-                </label>
-            </div>
+            </div>                       
             <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
+                <input type="submit" value="Vender Producto" class="btn btn-primary" />
             </div>
         </form>
     </div>
 </div>
 
 <div>
-    <a asp-action="Index">Back to List</a>
+    <a asp-action="Productos">Regresar</a>
 </div>
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-
-    <script>
-        function mostrarVistaPrevia() {
-            var input = document.getElementById('input-imagen');
-            var vistaPrevia = document.getElementById('vista-previa');
-
-            // Verifica si se seleccionó un archivo
-            if (input.files && input.files[0]) {
-                var lector = new FileReader();
-
-                lector.onload = function (e) {
-                    vistaPrevia.src = e.target.result;
-                    vistaPrevia.style.display = 'block';
-                }
-
-                lector.readAsDataURL(input.files[0]);
-            }
-        }
-    </script>
 
 }
